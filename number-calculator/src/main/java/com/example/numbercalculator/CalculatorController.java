@@ -1,9 +1,12 @@
 package com.example.numbercalculator;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Objects;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -22,8 +25,14 @@ public class CalculatorController {
    *
    * @param restTemplate the RestTemplate for making HTTP requests
    */
+  /**
+   * Constructs a new CalculatorController with the given RestTemplate.
+   *
+   * @param restTemplate the RestTemplate for making HTTP requests (must not be null)
+   * @throws NullPointerException if restTemplate is null
+   */
   public CalculatorController(RestTemplate restTemplate) {
-    this.restTemplate = restTemplate;
+    this.restTemplate = Objects.requireNonNull(restTemplate, "RestTemplate must not be null");
   }
 
   /**
@@ -35,16 +44,23 @@ public class CalculatorController {
   @GetMapping("/fancy")
   public String calculateFancy() {
     // Get two random numbers from the generator service
-    Integer num1Obj = restTemplate.getForObject(GENERATOR_URL, Integer.class);
-    Integer num2Obj = restTemplate.getForObject(GENERATOR_URL, Integer.class);
+    Integer num1Obj = null;
+    Integer num2Obj = null;
+    
+    try {
+      num1Obj = restTemplate.getForObject(GENERATOR_URL, Integer.class);
+      num2Obj = restTemplate.getForObject(GENERATOR_URL, Integer.class);
+    } catch (RestClientException e) {
+      return "Error: Failed to retrieve random numbers from generator service: " + e.getMessage();
+    }
 
     // Validate responses
     if (num1Obj == null || num2Obj == null) {
       return "Error: Failed to retrieve random numbers from generator service";
     }
 
-    int num1 = num1Obj;
-    int num2 = num2Obj;
+    final int num1 = num1Obj;
+    final int num2 = num2Obj;
 
     // Perform some fancy calculations
     int sum = num1 + num2;
@@ -52,13 +68,17 @@ public class CalculatorController {
     double average = (num1 + num2) / 2.0;
     String isPrime = isPrime(sum) ? "prime" : "not prime";
 
-    return String.format(Locale.US, """
-        Fancy Calculation Results:
-        Numbers: %d and %d
-        Sum: %d (%s)
-        Product: %d
-        Average: %.2f
-        """, num1, num2, sum, isPrime, product, average);
+    try {
+      return String.format(Locale.US, """
+          Fancy Calculation Results:
+          Numbers: %d and %d
+          Sum: %d (%s)
+          Product: %d
+          Average: %.2f
+          """, num1, num2, sum, isPrime, product, average);
+    } catch (Exception e) {
+      return "Error: Failed to format calculation results: " + e.getMessage();
+    }
   }
 
   /**
