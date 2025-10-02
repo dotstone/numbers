@@ -35,8 +35,16 @@ public class CalculatorController {
   @GetMapping("/fancy")
   public String calculateFancy() {
     // Get two random numbers from the generator service
-    int num1 = restTemplate.getForObject(GENERATOR_URL, Integer.class);
-    int num2 = restTemplate.getForObject(GENERATOR_URL, Integer.class);
+    Integer num1Obj = restTemplate.getForObject(GENERATOR_URL, Integer.class);
+    Integer num2Obj = restTemplate.getForObject(GENERATOR_URL, Integer.class);
+
+    // Validate responses
+    if (num1Obj == null || num2Obj == null) {
+      return "Error: Failed to retrieve random numbers from generator service";
+    }
+
+    int num1 = num1Obj;
+    int num2 = num2Obj;
 
     // Perform some fancy calculations
     int sum = num1 + num2;
