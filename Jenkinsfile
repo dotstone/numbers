@@ -351,32 +351,7 @@ pipeline {
             )
         }
         failure {
-            echo 'Pipeline failed!'
-            emailext(
-                subject: "❌ FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                body: """
-                    <h2>Build Failed</h2>
-                    <p><strong>Job:</strong> ${env.JOB_NAME} [${env.BUILD_NUMBER}]</p>
-                    <p><strong>Version:</strong> ${env.NEXT_VERSION}</p>
-                    <p><strong>Status:</strong> FAILURE</p>
-                    <p><strong>Duration:</strong> ${currentBuild.durationString}</p>
-                    <hr>
-                    <h3>Action Required</h3>
-                    <p>❌ The build has failed. Please investigate the following:</p>
-                    <ul>
-                        <li>Check console output for error messages</li>
-                        <li>Review test failures</li>
-                        <li>Verify code quality violations</li>
-                        <li>Check for compilation errors</li>
-                    </ul>
-                    <hr>
-                    <p>📊 <a href='${env.BUILD_URL}console'>View Console Output</a></p>
-                    <p>📋 <a href='${env.BUILD_URL}'>View Build Details</a></p>
-                """,
-                mimeType: 'text/html',
-                recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'CulpritsRecipientProvider']],
-                to: '${DEFAULT_RECIPIENTS}'
-            )
+            echo 'Pipeline failed! Check Jenkins console for details.'
         }
         always {
             echo 'Publishing all reports...'
