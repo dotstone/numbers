@@ -64,7 +64,7 @@ pipeline {
 
                     // Tag and push only when a new tag is needed (bump != none or no tag existed)
                     if (nextVersion != lastTag) {
-                        withCredentials([usernamePassword(credentialsId: 'e6bf49f4-bda7-481e-b74a-083c43fe4732', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                        withCredentials([usernamePassword(credentialsId: 'github-pat-numbers', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                             sh """
                                 git config user.email "ci@jenkins"
                                 git config user.name "Jenkins CI"
