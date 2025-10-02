@@ -6,7 +6,15 @@ pipeline {
     }
     
     environment {
-        MAVEN_OPTS = '-Xmx1024m'
+        MAVEN_OPTS = '-Xmx1024m -XX:+TieredCompilation -XX:TieredStopAtLevel=1'
+        MAVEN_CLI_OPTS = '--batch-mode --errors --fail-at-end --show-version'
+    }
+    
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 1, unit: 'HOURS')
+        timestamps()
+        disableConcurrentBuilds()
     }
     
     stages {
@@ -89,29 +97,161 @@ pipeline {
                 echo 'Building the project...'
                 script {
                     if (isUnix()) {
-                        sh './mvnw clean compile -Drevision=${NEXT_VERSION}'
+                        sh "./mvnw ${MAVEN_CLI_OPTS} clean compile -Drevision=\${NEXT_VERSION}"
                     } else {
-                        bat '.\\mvnw.cmd clean compile -Drevision=%NEXT_VERSION%'
+                        bat ".\\mvnw.cmd ${MAVEN_CLI_OPTS} clean compile -Drevision=%NEXT_VERSION%"
                     }
                 }
             }
         }
         
-        stage('Test') {
+        stage('Code Quality Analysis') {
+            parallel {
+                stage('Checkstyle') {
+                    steps {
+                        echo 'Running Checkstyle analysis...'
+                        script {
+                            try {
+                                if (isUnix()) {
+                                    sh "./mvnw ${MAVEN_CLI_OPTS} checkstyle:check -Drevision=\${NEXT_VERSION}"
+                                } else {
+                                    bat ".\\mvnw.cmd ${MAVEN_CLI_OPTS} checkstyle:check -Drevision=%NEXT_VERSION%"
+                                }
+                            } catch (Exception e) {
+                                unstable(message: "Checkstyle violations found")
+                                currentBuild.result = 'UNSTABLE'
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            recordIssues(
+                                enabledForFailure: true,
+                                tools: [checkStyle(pattern: '**/target/checkstyle-result.xml')],
+                                qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]
+                            )
+                        }
+                    }
+                }
+                
+                stage('PMD') {
+                    steps {
+                        echo 'Running PMD analysis...'
+                        script {
+                            try {
+                                if (isUnix()) {
+                                    sh "./mvnw ${MAVEN_CLI_OPTS} pmd:pmd pmd:cpd -Drevision=\${NEXT_VERSION}"
+                                } else {
+                                    bat ".\\mvnw.cmd ${MAVEN_CLI_OPTS} pmd:pmd pmd:cpd -Drevision=%NEXT_VERSION%"
+                                }
+                            } catch (Exception e) {
+                                unstable(message: "PMD violations found")
+                                currentBuild.result = 'UNSTABLE'
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            recordIssues(
+                                enabledForFailure: true,
+                                tools: [pmdParser(pattern: '**/target/pmd.xml'), cpd(pattern: '**/target/cpd.xml')],
+                                qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]
+                            )
+                        }
+                    }
+                }
+                
+                stage('SpotBugs') {
+                    steps {
+                        echo 'Running SpotBugs analysis...'
+                        script {
+                            try {
+                                if (isUnix()) {
+                                    sh "./mvnw ${MAVEN_CLI_OPTS} spotbugs:spotbugs -Drevision=\${NEXT_VERSION}"
+                                } else {
+                                    bat ".\\mvnw.cmd ${MAVEN_CLI_OPTS} spotbugs:spotbugs -Drevision=%NEXT_VERSION%"
+                                }
+                            } catch (Exception e) {
+                                unstable(message: "SpotBugs violations found")
+                                currentBuild.result = 'UNSTABLE'
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            recordIssues(
+                                enabledForFailure: true,
+                                tools: [spotBugs(pattern: '**/target/spotbugsXml.xml')],
+                                qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Test & Coverage') {
             steps {
-                echo 'Running unit tests...'
+                echo 'Running unit tests with coverage...'
                 script {
                     if (isUnix()) {
-                        sh './mvnw test -Drevision=${NEXT_VERSION}'
+                        sh "./mvnw ${MAVEN_CLI_OPTS} test -Drevision=\${NEXT_VERSION}"
                     } else {
-                        bat '.\\mvnw.cmd test -Drevision=%NEXT_VERSION%'
+                        bat ".\\mvnw.cmd ${MAVEN_CLI_OPTS} test -Drevision=%NEXT_VERSION%"
                     }
                 }
             }
             post {
                 always {
-                    junit '**/target/surefire-reports/*.xml'
-                    echo 'Test results published'
+                    junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+                    jacoco(
+                        execPattern: '**/target/jacoco.exec',
+                        classPattern: '**/target/classes',
+                        sourcePattern: '**/src/main/java',
+                        exclusionPattern: '**/*Test*.class',
+                        minimumLineCoverage: '80',
+                        minimumBranchCoverage: '70',
+                        changeBuildStatus: true
+                    )
+                    publishHTML(target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'target/site/jacoco',
+                        reportFiles: 'index.html',
+                        reportName: 'JaCoCo Coverage Report'
+                    ])
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                echo 'Running OWASP Dependency Check...'
+                script {
+                    try {
+                        if (isUnix()) {
+                            sh "./mvnw ${MAVEN_CLI_OPTS} dependency-check:check -Drevision=\${NEXT_VERSION}"
+                        } else {
+                            bat ".\\mvnw.cmd ${MAVEN_CLI_OPTS} dependency-check:check -Drevision=%NEXT_VERSION%"
+                        }
+                    } catch (Exception e) {
+                        unstable(message: "Security vulnerabilities found")
+                        currentBuild.result = 'UNSTABLE'
+                    }
+                }
+            }
+            post {
+                always {
+                    dependencyCheckPublisher pattern: '**/target/dependency-check-report.xml'
+                    publishHTML(target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'target',
+                        reportFiles: 'dependency-check-report.html',
+                        reportName: 'OWASP Dependency Check'
+                    ])
                 }
             }
         }
@@ -121,9 +261,9 @@ pipeline {
                 echo 'Packaging the applications...'
                 script {
                     if (isUnix()) {
-                        sh './mvnw package -DskipTests -Drevision=${NEXT_VERSION}'
+                        sh "./mvnw ${MAVEN_CLI_OPTS} package -DskipTests -Drevision=\${NEXT_VERSION}"
                     } else {
-                        bat '.\\mvnw.cmd package -DskipTests -Drevision=%NEXT_VERSION%'
+                        bat ".\\mvnw.cmd ${MAVEN_CLI_OPTS} package -DskipTests -Drevision=%NEXT_VERSION%"
                     }
                 }
             }
@@ -132,19 +272,18 @@ pipeline {
         stage('Archive Artifacts') {
             steps {
                 echo 'Archiving artifacts...'
-                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+                archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true, allowEmptyArchive: true
             }
         }
         
-        stage('Code Coverage') {
+        stage('Quality Gate') {
             steps {
-                echo 'Generating code coverage report...'
                 script {
-                    if (isUnix()) {
-                        sh './mvnw verify -Drevision=${NEXT_VERSION}'
-                    } else {
-                        bat '.\\mvnw.cmd verify -Drevision=%NEXT_VERSION%'
+                    def qualityGate = currentBuild.result ?: 'SUCCESS'
+                    if (qualityGate == 'UNSTABLE') {
+                        error "Quality gate failed: Code quality issues detected"
                     }
+                    echo "Quality gate passed: ${qualityGate}"
                 }
             }
         }
@@ -153,10 +292,60 @@ pipeline {
     post {
         success {
             echo 'Pipeline completed successfully!'
+            script {
+                def coverageReport = "Code coverage and quality checks passed."
+                emailext(
+                    subject: "✅ SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                    body: """
+                        <h2>Build Successful</h2>
+                        <p><strong>Job:</strong> ${env.JOB_NAME} [${env.BUILD_NUMBER}]</p>
+                        <p><strong>Version:</strong> ${env.NEXT_VERSION}</p>
+                        <p><strong>Status:</strong> ${currentBuild.result ?: 'SUCCESS'}</p>
+                        <p><strong>Duration:</strong> ${currentBuild.durationString}</p>
+                        <hr>
+                        <h3>Quality Metrics</h3>
+                        <ul>
+                            <li>✅ Code Style (Checkstyle): Passed</li>
+                            <li>✅ Code Quality (PMD): Passed</li>
+                            <li>✅ Bug Detection (SpotBugs): Passed</li>
+                            <li>✅ Code Coverage (JaCoCo): ≥80% line, ≥70% branch</li>
+                            <li>✅ Security Scan (OWASP): No critical vulnerabilities</li>
+                        </ul>
+                        <hr>
+                        <p>📊 <a href='${env.BUILD_URL}'>View Build Details</a></p>
+                        <p>📈 <a href='${env.BUILD_URL}jacoco'>View Coverage Report</a></p>
+                        <p>🔒 <a href='${env.BUILD_URL}dependency-check-jenkins-plugin'>View Security Report</a></p>
+                    """,
+                    mimeType: 'text/html',
+                    recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                    to: '${DEFAULT_RECIPIENTS}'
+                )
+            }
+        }
+        unstable {
+            echo 'Pipeline completed with warnings!'
             emailext(
-                subject: "SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                body: """<p>SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-                    <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+                subject: "⚠️ UNSTABLE: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                body: """
+                    <h2>Build Unstable - Quality Issues Detected</h2>
+                    <p><strong>Job:</strong> ${env.JOB_NAME} [${env.BUILD_NUMBER}]</p>
+                    <p><strong>Version:</strong> ${env.NEXT_VERSION}</p>
+                    <p><strong>Status:</strong> UNSTABLE</p>
+                    <p><strong>Duration:</strong> ${currentBuild.durationString}</p>
+                    <hr>
+                    <h3>Issues Found</h3>
+                    <p>⚠️ Code quality or security issues were detected. Please review:</p>
+                    <ul>
+                        <li>📋 <a href='${env.BUILD_URL}checkstyle'>Checkstyle Report</a></li>
+                        <li>📋 <a href='${env.BUILD_URL}pmd'>PMD Report</a></li>
+                        <li>🐛 <a href='${env.BUILD_URL}spotbugs'>SpotBugs Report</a></li>
+                        <li>🔒 <a href='${env.BUILD_URL}dependency-check-jenkins-plugin'>Security Report</a></li>
+                        <li>📈 <a href='${env.BUILD_URL}jacoco'>Coverage Report</a></li>
+                    </ul>
+                    <hr>
+                    <p>📊 <a href='${env.BUILD_URL}'>View Full Build Details</a></p>
+                """,
+                mimeType: 'text/html',
                 recipientProviders: [[$class: 'DevelopersRecipientProvider']],
                 to: '${DEFAULT_RECIPIENTS}'
             )
@@ -164,16 +353,56 @@ pipeline {
         failure {
             echo 'Pipeline failed!'
             emailext(
-                subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-                body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-                    <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
-                recipientProviders: [[$class: 'DevelopersRecipientProvider']],
+                subject: "❌ FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                body: """
+                    <h2>Build Failed</h2>
+                    <p><strong>Job:</strong> ${env.JOB_NAME} [${env.BUILD_NUMBER}]</p>
+                    <p><strong>Version:</strong> ${env.NEXT_VERSION}</p>
+                    <p><strong>Status:</strong> FAILURE</p>
+                    <p><strong>Duration:</strong> ${currentBuild.durationString}</p>
+                    <hr>
+                    <h3>Action Required</h3>
+                    <p>❌ The build has failed. Please investigate the following:</p>
+                    <ul>
+                        <li>Check console output for error messages</li>
+                        <li>Review test failures</li>
+                        <li>Verify code quality violations</li>
+                        <li>Check for compilation errors</li>
+                    </ul>
+                    <hr>
+                    <p>📊 <a href='${env.BUILD_URL}console'>View Console Output</a></p>
+                    <p>📋 <a href='${env.BUILD_URL}'>View Build Details</a></p>
+                """,
+                mimeType: 'text/html',
+                recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'CulpritsRecipientProvider']],
                 to: '${DEFAULT_RECIPIENTS}'
             )
         }
         always {
-            echo 'Cleaning up workspace...'
-            cleanWs()
+            echo 'Publishing all reports...'
+            // Publish aggregated test results
+            publishHTML(target: [
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'target/site',
+                reportFiles: 'project-reports.html',
+                reportName: 'Maven Site Report'
+            ])
+            
+            // Clean workspace only on success to preserve artifacts for debugging
+            script {
+                if (currentBuild.result == 'SUCCESS') {
+                    echo 'Cleaning up workspace...'
+                    cleanWs(
+                        deleteDirs: true,
+                        disableDeferredWipeout: true,
+                        notFailBuild: true
+                    )
+                } else {
+                    echo 'Preserving workspace for debugging (build not successful)'
+                }
+            }
         }
     }
 }

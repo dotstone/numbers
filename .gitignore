@@ -36,3 +36,16 @@ Thumbs.db
 
 # Spring Boot
 spring-boot-devtools.properties
+
+# Code Quality Reports
+**/target/site/
+**/target/checkstyle-*.xml
+**/target/pmd.xml
+**/target/cpd.xml
+**/target/spotbugsXml.xml
+**/target/dependency-check-report.*
+**/target/jacoco.exec
+**/target/surefire-reports/
+
+# OWASP Dependency Check Data
+.dependency-check/
