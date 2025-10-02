@@ -42,7 +42,13 @@ pipeline {
                 echo 'Running unit tests...'
                 script {
                     if (isUnix()) {
-                        sh './mvnw test'
+                        sh '''
+                            # Fix JAVA_HOME if it points to the wrong directory
+                            if [ -d "$JAVA_HOME/jdk-21.0.8+9" ]; then
+                                export JAVA_HOME="$JAVA_HOME/jdk-21.0.8+9"
+                            fi
+                            ./mvnw test
+                        '''
                     } else {
                         bat '.\\mvnw.cmd test'
                     }
@@ -61,7 +67,13 @@ pipeline {
                 echo 'Packaging the applications...'
                 script {
                     if (isUnix()) {
-                        sh './mvnw package -DskipTests'
+                        sh '''
+                            # Fix JAVA_HOME if it points to the wrong directory
+                            if [ -d "$JAVA_HOME/jdk-21.0.8+9" ]; then
+                                export JAVA_HOME="$JAVA_HOME/jdk-21.0.8+9"
+                            fi
+                            ./mvnw package -DskipTests
+                        '''
                     } else {
                         bat '.\\mvnw.cmd package -DskipTests'
                     }
@@ -81,7 +93,13 @@ pipeline {
                 echo 'Generating code coverage report...'
                 script {
                     if (isUnix()) {
-                        sh './mvnw verify'
+                        sh '''
+                            # Fix JAVA_HOME if it points to the wrong directory
+                            if [ -d "$JAVA_HOME/jdk-21.0.8+9" ]; then
+                                export JAVA_HOME="$JAVA_HOME/jdk-21.0.8+9"
+                            fi
+                            ./mvnw verify
+                        '''
                     } else {
                         bat '.\\mvnw.cmd verify'
                     }
