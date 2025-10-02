@@ -24,7 +24,7 @@
         
         <!-- Code Quality Plugin Versions -->
         <jacoco.version>0.8.11</jacoco.version>
-        <spotbugs.version>4.8.3.0</spotbugs.version>
+        <spotbugs.version>4.8.6.4</spotbugs.version>
         <checkstyle.version>3.3.1</checkstyle.version>
         <pmd.version>3.25.0</pmd.version>
         <dependency-check.version>9.0.9</dependency-check.version>
