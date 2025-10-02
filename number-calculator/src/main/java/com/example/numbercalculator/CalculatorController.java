@@ -1,6 +1,5 @@
 package com.example.numbercalculator;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Objects;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,11 +19,6 @@ public class CalculatorController {
   private static final String GENERATOR_URL = "http://localhost:8082/api/numbers/random";
   private final RestTemplate restTemplate;
 
-  /**
-   * Constructs a new CalculatorController with the given RestTemplate.
-   *
-   * @param restTemplate the RestTemplate for making HTTP requests
-   */
   /**
    * Constructs a new CalculatorController with the given RestTemplate.
    *
