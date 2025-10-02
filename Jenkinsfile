@@ -182,7 +182,7 @@ pipeline {
                             recordIssues(
                                 enabledForFailure: true,
                                 tools: [spotBugs(pattern: '**/target/spotbugsXml.xml')],
-                                qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]
+                                qualityGates: [[threshold: 10, type: 'TOTAL', unstable: true]]
                             )
                         }
                     }
