@@ -14,7 +14,7 @@
     
     <groupId>com.example</groupId>
     <artifactId>number-services</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>${revision}</version>
     <name>number-services</name>
     <description>Demo project with two microservices</description>
     
