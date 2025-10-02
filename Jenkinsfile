@@ -23,8 +23,11 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh '''
-                            echo "JAVA_HOME: $JAVA_HOME"
-                            ls -la "$JAVA_HOME"
+                            # Fix JAVA_HOME if it points to the wrong directory
+                            if [ -d "$JAVA_HOME/jdk-21.0.8+9" ]; then
+                                export JAVA_HOME="$JAVA_HOME/jdk-21.0.8+9"
+                            fi
+                            echo "Using JAVA_HOME: $JAVA_HOME"
                             ./mvnw clean compile
                         '''
                     } else {
