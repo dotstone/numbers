@@ -30,9 +30,9 @@ pipeline {
                     def bump = 'none'
                     if (commits =~ /BREAKING CHANGE|!:/) {
                         bump = 'major'
-                    } else if (commits =~ /^feat\:/m) {
+                    } else if (commits =~ /(?m)^feat:/) {
                         bump = 'minor'
-                    } else if (commits =~ /^fix\:/m) {
+                    } else if (commits =~ /(?m)^fix:/) {
                         bump = 'patch'
                     }
 
