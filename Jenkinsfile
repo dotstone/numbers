@@ -22,7 +22,11 @@ pipeline {
                 echo 'Building the project...'
                 script {
                     if (isUnix()) {
-                        sh './mvnw clean compile'
+                        sh '''
+                            echo "JAVA_HOME: $JAVA_HOME"
+                            ls -la "$JAVA_HOME"
+                            ./mvnw clean compile
+                        '''
                     } else {
                         bat '.\\mvnw.cmd clean compile'
                     }
