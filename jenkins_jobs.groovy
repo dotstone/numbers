@@ -59,7 +59,7 @@ multibranchPipelineJob('number-generator') {
       id('number-generator-repo')
       repoOwner('dotstone')
       repository('numbers')
-      credentialsId('github-pat-numbers')
+      scanCredentialsId('github-pat-numbers')
     }
   }
   
@@ -92,7 +92,7 @@ multibranchPipelineJob('number-calculator') {
       id('number-calculator-repo')
       repoOwner('dotstone')
       repository('numbers')
-      credentialsId('github-pat-numbers')
+      scanCredentialsId('github-pat-numbers')
     }
   }
   
