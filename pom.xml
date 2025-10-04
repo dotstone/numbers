@@ -139,6 +139,12 @@
                     <rulesets>
                         <ruleset>/rulesets/java/quickstart.xml</ruleset>
                     </rulesets>
+                    <excludeRoots>
+                        <excludeRoot>target/generated-sources</excludeRoot>
+                    </excludeRoots>
+                    <excludes>
+                        <exclude>**/*Application.java</exclude>
+                    </excludes>
                 </configuration>
                 <executions>
                     <execution>
