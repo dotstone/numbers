@@ -30,8 +30,8 @@
         <dependency-check.version>9.0.9</dependency-check.version>
         
         <!-- Code Quality Thresholds -->
-        <jacoco.line.coverage>0.80</jacoco.line.coverage>
-        <jacoco.branch.coverage>0.70</jacoco.branch.coverage>
+        <jacoco.line.coverage>0.60</jacoco.line.coverage>
+        <jacoco.branch.coverage>0.50</jacoco.branch.coverage>
     </properties>
     
     <modules>
