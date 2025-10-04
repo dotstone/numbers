@@ -1,0 +1,78 @@
+jobs:
+  - script: >
+      multibranchPipelineJob('number-generator') {
+        displayName('Number Generator Service')
+        description('Builds and deploys the number-generator microservice')
+        
+        branchSources {
+          git {
+            id('number-generator-repo')
+            remote('https://github.com/dotstone/numbers.git')
+            credentialsId('github-pat-numbers')
+            
+            traits {
+              gitBranchDiscovery()
+              gitTagDiscovery()
+            }
+          }
+        }
+        
+        factory {
+          workflowBranchProjectFactory {
+            scriptPath('number-generator/Jenkinsfile')
+          }
+        }
+        
+        orphanedItemStrategy {
+          discardOldItems {
+            numToKeep(10)
+          }
+        }
+        
+        triggers {
+          periodic(1)
+        }
+        
+        configure { node ->
+          node / sources / data / 'jenkins.branch.BranchSource' / source / traits << 'jenkins.plugins.git.traits.CleanBeforeCheckoutTrait' {}
+        }
+      }
+
+  - script: >
+      multibranchPipelineJob('number-calculator') {
+        displayName('Number Calculator Service')
+        description('Builds and deploys the number-calculator microservice')
+        
+        branchSources {
+          git {
+            id('number-calculator-repo')
+            remote('https://github.com/dotstone/numbers.git')
+            credentialsId('github-pat-numbers')
+            
+            traits {
+              gitBranchDiscovery()
+              gitTagDiscovery()
+            }
+          }
+        }
+        
+        factory {
+          workflowBranchProjectFactory {
+            scriptPath('number-calculator/Jenkinsfile')
+          }
+        }
+        
+        orphanedItemStrategy {
+          discardOldItems {
+            numToKeep(10)
+          }
+        }
+        
+        triggers {
+          periodic(1)
+        }
+        
+        configure { node ->
+          node / sources / data / 'jenkins.branch.BranchSource' / source / traits << 'jenkins.plugins.git.traits.CleanBeforeCheckoutTrait' {}
+        }
+      }
