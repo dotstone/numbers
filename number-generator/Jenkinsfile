@@ -18,17 +18,20 @@ pipeline {
                         git fetch --tags --prune || true
                     '''
 
-                    // Determine last tag or default to 0.0.0
-                    def lastTag = sh(script: "git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0", returnStdout: true).trim()
+                    // Determine last tag for this service or default to 0.0.0
+                    def lastTag = sh(script: "git tag -l '${SERVICE_NAME}-*' --sort=-v:refname | head -n 1 | sed 's/${SERVICE_NAME}-//' || echo 0.0.0", returnStdout: true).trim()
+                    if (!lastTag || lastTag.isEmpty()) {
+                        lastTag = '0.0.0'
+                    }
                     
                     // Collect commit messages since last tag (or all if 0.0.0)
-                    def range = (lastTag == '0.0.0') ? '' : "${lastTag}..HEAD"
+                    def range = (lastTag == '0.0.0') ? '' : "${SERVICE_NAME}-${lastTag}..HEAD"
                     def commits = sh(script: "git log ${range} --pretty=%s 2>/dev/null || true", returnStdout: true).trim()
 
                     // Only consider commits that affect this service
                     def serviceCommits = ""
                     if (commits) {
-                        def changes = sh(script: "git diff --name-only ${lastTag}..HEAD ${SERVICE_NAME}/ || true", returnStdout: true).trim()
+                        def changes = sh(script: "git diff --name-only ${SERVICE_NAME}-${lastTag}..HEAD ${SERVICE_NAME}/ || true", returnStdout: true).trim()
                         if (changes) {
                             serviceCommits = commits
                         }

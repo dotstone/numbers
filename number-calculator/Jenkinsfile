@@ -12,20 +12,21 @@ pipeline {
             when { branch 'main' }
             steps {
                 script {
-                    // Ensure we have full git history and tags
                     sh '''
                         git fetch --tags --prune --unshallow || true
                         git fetch --tags --prune || true
                     '''
 
-                    // Determine last tag or default to 0.0.0
-                    def lastTag = sh(script: "git describe --tags --match '${SERVICE_NAME}-*' --abbrev=0 2>/dev/null || echo 0.0.0", returnStdout: true).trim()
+                    // Determine last tag for this service or default to 0.0.0
+                    def lastTag = sh(script: "git tag -l '${SERVICE_NAME}-*' --sort=-v:refname | head -n 1 | sed 's/${SERVICE_NAME}-//' || echo 0.0.0", returnStdout: true).trim()
+                    if (!lastTag || lastTag.isEmpty()) {
+                        lastTag = '0.0.0'
+                    }
                     lastTag = lastTag.replaceAll("${SERVICE_NAME}-", "")
                     
                     // Collect commit messages since last tag (or all if 0.0.0)
                     def range = (lastTag == '0.0.0') ? '' : "${SERVICE_NAME}-${lastTag}..HEAD"
                     def commits = sh(script: "git log ${range} --pretty=%s 2>/dev/null || true", returnStdout: true).trim()
-
                     // Only consider commits that affect this service
                     def serviceCommits = ""
                     if (commits) {
