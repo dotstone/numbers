@@ -100,13 +100,11 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project...'
-                dir(SERVICE_NAME) {
-                    script {
-                        if (isUnix()) {
-                            sh './mvnw clean compile -Drevision=${NEXT_VERSION}'
-                        } else {
-                            bat '.\\mvnw.cmd clean compile -Drevision=%NEXT_VERSION%'
-                        }
+                script {
+                    if (isUnix()) {
+                        sh './mvnw clean compile -pl ${SERVICE_NAME} -am -Drevision=${NEXT_VERSION}'
+                    } else {
+                        bat '.\\mvnw.cmd clean compile -pl %SERVICE_NAME% -am -Drevision=%NEXT_VERSION%'
                     }
                 }
             }
@@ -115,13 +113,11 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Running unit tests...'
-                dir(SERVICE_NAME) {
-                    script {
-                        if (isUnix()) {
-                            sh './mvnw test -Drevision=${NEXT_VERSION}'
-                        } else {
-                            bat '.\\mvnw.cmd test -Drevision=%NEXT_VERSION%'
-                        }
+                script {
+                    if (isUnix()) {
+                        sh './mvnw test -pl ${SERVICE_NAME} -am -Drevision=${NEXT_VERSION}'
+                    } else {
+                        bat '.\\mvnw.cmd test -pl %SERVICE_NAME% -am -Drevision=%NEXT_VERSION%'
                     }
                 }
             }
@@ -136,13 +132,11 @@ pipeline {
         stage('Package') {
             steps {
                 echo 'Packaging the application...'
-                dir(SERVICE_NAME) {
-                    script {
-                        if (isUnix()) {
-                            sh './mvnw package -DskipTests -Drevision=${NEXT_VERSION}'
-                        } else {
-                            bat '.\\mvnw.cmd package -DskipTests -Drevision=%NEXT_VERSION%'
-                        }
+                script {
+                    if (isUnix()) {
+                        sh './mvnw package -DskipTests -pl ${SERVICE_NAME} -am -Drevision=${NEXT_VERSION}'
+                    } else {
+                        bat '.\\mvnw.cmd package -DskipTests -pl %SERVICE_NAME% -am -Drevision=%NEXT_VERSION%'
                     }
                 }
             }
@@ -151,13 +145,11 @@ pipeline {
         stage('Code Coverage') {
             steps {
                 echo 'Generating code coverage report...'
-                dir(SERVICE_NAME) {
-                    script {
-                        if (isUnix()) {
-                            sh './mvnw verify -Drevision=${NEXT_VERSION}'
-                        } else {
-                            bat '.\\mvnw.cmd verify -Drevision=%NEXT_VERSION%'
-                        }
+                script {
+                    if (isUnix()) {
+                        sh './mvnw verify -pl ${SERVICE_NAME} -am -Drevision=${NEXT_VERSION}'
+                    } else {
+                        bat '.\\mvnw.cmd verify -pl %SERVICE_NAME% -am -Drevision=%NEXT_VERSION%'
                     }
                 }
             }
