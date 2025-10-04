@@ -55,15 +55,11 @@ multibranchPipelineJob('number-generator') {
   description('Builds and deploys the number-generator microservice')
   
   branchSources {
-    git {
+    github {
       id('number-generator-repo')
-      remote('https://github.com/dotstone/numbers.git')
+      repoOwner('dotstone')
+      repository('numbers')
       credentialsId('github-pat-numbers')
-      
-      traits {
-        gitBranchDiscovery()
-        gitTagDiscovery()
-      }
     }
   }
   
@@ -92,15 +88,11 @@ multibranchPipelineJob('number-calculator') {
   description('Builds and deploys the number-calculator microservice')
   
   branchSources {
-    git {
+    github {
       id('number-calculator-repo')
-      remote('https://github.com/dotstone/numbers.git')
+      repoOwner('dotstone')
+      repository('numbers')
       credentialsId('github-pat-numbers')
-      
-      traits {
-        gitBranchDiscovery()
-        gitTagDiscovery()
-      }
     }
   }
   
