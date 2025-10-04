@@ -17,7 +17,6 @@ organizationFolder('numbers-services') {
         gitHubPullRequestDiscovery {
           strategyId(1)
         }
-        gitHubTagDiscovery()
       }
     }
   }
