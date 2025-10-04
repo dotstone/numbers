@@ -63,13 +63,13 @@ public class CalculatorController {
     String isPrime = isPrime(sum) ? "prime" : "not prime";
 
     try {
-      return String.format(Locale.US, """
-          Fancy Calculation Results:
-          Numbers: %d and %d
-          Sum: %d (%s)
-          Product: %d
-          Average: %.2f
-          """, num1, num2, sum, isPrime, product, average);
+      return String.format(Locale.US,
+          "Fancy Calculation Results:%n" +
+          "Numbers: %d and %d%n" +
+          "Sum: %d (%s)%n" +
+          "Product: %d%n" +
+          "Average: %.2f%n",
+          num1, num2, sum, isPrime, product, average);
     } catch (Exception e) {
       return "Error: Failed to format calculation results: " + e.getMessage();
     }
