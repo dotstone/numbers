@@ -64,11 +64,11 @@ public class CalculatorController {
 
     try {
       return String.format(Locale.US,
-          "Fancy Calculation Results:%n" +
-          "Numbers: %d and %d%n" +
-          "Sum: %d (%s)%n" +
-          "Product: %d%n" +
-          "Average: %.2f%n",
+          "Fancy Calculation Results:%n"
+          + "Numbers: %d and %d%n"
+          + "Sum: %d (%s)%n"
+          + "Product: %d%n"
+          + "Average: %.2f%n",
           num1, num2, sum, isPrime, product, average);
     } catch (Exception e) {
       return "Error: Failed to format calculation results: " + e.getMessage();
