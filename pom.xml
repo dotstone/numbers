@@ -184,8 +184,8 @@
                     <suppressionFiles>
                         <suppressionFile>dependency-check-suppressions.xml</suppressionFile>
                     </suppressionFiles>
-                    <!-- Skip auto-update in CI environment to avoid NVD API rate limits -->
-                    <autoUpdate>false</autoUpdate>
+                    <!-- Skip in CI environment - requires NVD API key for updates -->
+                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>
